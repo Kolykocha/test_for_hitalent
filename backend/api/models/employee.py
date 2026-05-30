@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from infrastructures.db.base import Base
 
 
-class Common(Base):
+class CommonEmployee(Base):
     __tablename__ = "employees"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

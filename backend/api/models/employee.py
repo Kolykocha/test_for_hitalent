@@ -9,7 +9,7 @@ class CommonEmployee(Base):
     __tablename__ = "employees"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    department_id: Mapped[int] = mapped_column(Integer, ForeignKey("branches.branch_id"), nullable=False)
+    department_id: Mapped[int] = mapped_column(Integer, ForeignKey("departments.id"), nullable=False)
     full_name: Mapped[str] = mapped_column(Text, nullable=False)
     position: Mapped[str] = mapped_column(Text, nullable=False)
     hired_at: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

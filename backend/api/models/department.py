@@ -10,7 +10,7 @@ class CommonDepartment(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    parent_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("branches.branch_id"), nullable=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("departments.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
 

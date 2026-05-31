@@ -1,9 +1,9 @@
-# build a schema using pydantic
-from typing import List, Literal, Union, Optional, Annotated, Dict, Any
-from datetime import date, datetime
-#from enum import Enum
 
-from pydantic import BaseModel, StringConstraints, Field, field_validator
+from typing import  Optional, Annotated
+from datetime import  datetime
+
+
+from pydantic import BaseModel, StringConstraints, Field
 
 
 class Department(BaseModel):

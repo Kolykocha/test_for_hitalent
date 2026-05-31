@@ -1,0 +1,12 @@
+from collections.abc import Mapping
+from typing import Literal
+from fastapi import APIRouter, Depends
+
+from api.endpoints.department import router as department
+
+def build_v1_router()->APIRouter:
+    api_router = APIRouter()
+
+    protected = [] # здесь зависимости для авторизации
+
+    api_router.include_router(department, tags=['Department'], dependencies=protected)

@@ -13,7 +13,7 @@ from schemas.employee import Employee,EmployeeCreate, EmployeeReturn
 from db_error_handler import db_error_handler
 from db import get_db
 
-router = APIRouter(prefix='/departments', route_class='')
+router = APIRouter(prefix='/departments')
 
 async def get_children_tree(
     db: Session,
@@ -86,23 +86,22 @@ async def create_department(department: DepartmentCreate, db: Session = Depends(
 
     today = datetime.today()
 
-    if department.parent_id != None:
-        department_copy = db.query(Department).filter(Department.parent_id == department.parent_id, 
+    department_copy = db.query(Department).filter(Department.parent_id == department.parent_id, 
                                                       Department.name == (department.name).strip).first()
 
-        if department_copy:
-            raise HTTPException(status_code=400, detail="Department name is exists") 
+    if department_copy:
+        raise HTTPException(status_code=400, detail="Department name is exists") 
 
-    new_departnemt = Department(
+    new_department = Department(
         name = (department.name).strip(),
         parent_id=department.parent_id,
         created_at=today
     )
 
-    db.add(new_departnemt)
+    db.add(new_department)
     db.commit()
-    db.refresh(new_departnemt) 
-    return new_departnemt
+    db.refresh(new_department) 
+    return new_department
 
 
 @router.post('/{id}/employees/', response_model=EmployeeReturn, status_code=status.HTTP_201_CREATED)
@@ -128,7 +127,7 @@ async def create_employee(id:int, employee: EmployeeCreate, db: Session = Depend
 
 @router.get('/{id}', response_model=DepartmentTree, status_code=status.HTTP_200_OK)
 @db_error_handler()
-async def get_deparments(id:int,
+async def get_departments(id:int,
                          depth:int = Query(1, ge=1, le=5, description="Глубина вложенности подразделений (1-5)"),
                          include_employees:bool = Query(True, description="Включить сотрудников в ответ"), 
                          db: Session = Depends(get_db)):
@@ -154,7 +153,7 @@ async def get_deparments(id:int,
 
 @router.patch('/{id}', response_model=DepartmentReturn, status_code=status.HTTP_200_OK)
 @db_error_handler()
-async def patch_deparments(id:int,
+async def patch_departments(id:int,
                             department: DepartmentCreate,
                            db: Session = Depends(get_db)):
     
@@ -168,13 +167,17 @@ async def patch_deparments(id:int,
         department_update.name = (department.name).strip()
     if department.parent_id:
         
-        if department.parent_id == department_update.parent_id:
+        if department.parent_id == id:
             raise HTTPException(status_code=400, detail="Department cant be a parent to himself")
         
-        deportament_parent = db.query(Department).filter(Department.id == department.parent_id).first()
+        new_parent = db.query(Department).filter(Department.id == department.parent_id).first()
 
-        if deportament_parent.parent_id == department_update.parent_id:
-            raise HTTPException(status_code=409, detail="Department cannot be its own parent")
+        current = new_parent
+        while current:
+            if current.id == id:
+                raise HTTPException(409, "Circular reference detected")
+            current = current.parent  
+
         
         department_update.parent_id = department.parent_id
 
@@ -185,7 +188,7 @@ async def patch_deparments(id:int,
 
 @router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
 @db_error_handler()
-async def delete_deparments(id:int,
+async def delete_departments(id:int,
                             mode: str = Query(...,descriptio= 'cascade — удалить подразделение, всех сотрудников и все дочерние подразделения reassign — удалить подразделение, а сотрудников перевести в reassign_to_department_id'),
                             reassign_to_department_id: Optional[int] = Query(None, description="ID подразделения для перемещения сотрудников (обязателен при mode=reassign)"),
                             db: Session = Depends(get_db)):
@@ -193,27 +196,28 @@ async def delete_deparments(id:int,
 
     if mode == 'reassign' and reassign_to_department_id == None:
         raise HTTPException(status_code=400, detail="reassign_to_department_id is None")
-    
-    department = db.query(Department).filter(Department.id == id).first()
-
-
-    target_department = db.query(Department).filter(Department.id == reassign_to_department_id).first()
-    if not target_department:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Target department with id {reassign_to_department_id} not found"
-            )
-    
-    if reassign_to_department_id == id:
-            raise HTTPException(
-                status_code=409,
-                detail="Cannot reassign employees to the same department being deleted"
-            )
 
 
     if mode == 'cascade': 
+
         await cascade_delete(db, id)
+
     elif mode == 'reassign': 
+
+        target_department = db.query(Department).filter(Department.id == reassign_to_department_id).first()
+
+        if not target_department:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Target department with id {reassign_to_department_id} not found"
+                )
+        
+        if reassign_to_department_id == id:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Cannot reassign employees to the same department being deleted"
+                )
+        
         await reassign_delete(db, id, reassign_to_department_id)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

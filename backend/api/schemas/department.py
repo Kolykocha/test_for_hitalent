@@ -27,4 +27,4 @@ class DepartmentReturn(DepartmentCreate):
 class DepartmentTree(BaseModel):
     department : CommonDepartment
     employees : List[CommonEmployee] = []
-    children: List[CommonDepartment] = []
+    children: List[DepartmentTree] = []

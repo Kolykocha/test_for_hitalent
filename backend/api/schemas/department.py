@@ -2,16 +2,12 @@
 from typing import  Optional, Annotated, List
 from datetime import  datetime
 
-from schemas.employee import Employee
+from models.employee import CommonEmployee
+from models.department import CommonDepartment
 
 from pydantic import BaseModel, StringConstraints, Field
 
 
-class Department(BaseModel):
-    id: int = Field(..., title="Индификатор подразделения", description='Индификатор подразделения')
-    created_at: datetime = Field(..., title="Дата создания", description='Дата создания')
-    name: Annotated[str,StringConstraints(max_length=200)] = Field(..., title="Название подразделения", description='Название подразделения')
-    parent_id: Optional[int]= Field(None, title="Название родительского подразделения", description='Название родительского подразделения если есть (поле может быть Null)')
     
 class DepartmentCreate(BaseModel):
     
@@ -20,7 +16,7 @@ class DepartmentCreate(BaseModel):
         
 
 
-class DepartmentReturn(Department):  
+class DepartmentReturn(DepartmentCreate):  
 
     id: int = Field(..., title="Индификатор подразделения", description='Индификатор подразделения')
     created_at: datetime = Field(..., title="Дата создания", description='Дата создания')
@@ -29,6 +25,6 @@ class DepartmentReturn(Department):
 
 
 class DepartmentTree(BaseModel):
-    department : Department
-    employees : List[Employee] = []
-    children: List[Department] = []
+    department : CommonDepartment
+    employees : List[CommonEmployee] = []
+    children: List[CommonDepartment] = []
